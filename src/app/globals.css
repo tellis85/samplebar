@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (max-width: 768px) {
+  .print-queue {
+    width: 100%; /* Full width for mobile */
+    height: 100%; /* Full height for mobile */
+  }
+}
+.print-queue {
+  z-index: 1050; /* Ensures it sits above other elements */
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); /* Add a shadow for distinction */
+}
+.label-container {
+  position: relative; /* Needed for proper positioning of child elements */
+  overflow: hidden; /* Ensures the "eye" icon stays contained */
+}
+.preview-icon {
+  position: absolute; /* Position it inside the container */
+  top: 4px; /* Adjust distance from top edge */
+  right: 4px; /* Adjust distance from right edge */
+  z-index: 10; /* Keep it above the label image */
+  background-color: white; /* White background for visibility */
+  border-radius: 50%; /* Circle shape */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+}
+.preview-icon:hover {
+  color: #1d4ed8; /* Change icon color on hover (e.g., blue) */
+}
