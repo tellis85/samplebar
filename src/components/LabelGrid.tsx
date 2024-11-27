@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -17,27 +18,41 @@ export function LabelGrid({ labels, onAddToQueue, getImageUrl }: LabelGridProps)
   const [quantities, setQuantities] = useState<{ [key: string]: string }>({});
   const loaderRef = useRef(null);
   const ITEMS_PER_PAGE = 20;
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Reset pagination when labels prop changes
   useEffect(() => {
-    setDisplayedLabels(labels.slice(0, ITEMS_PER_PAGE));
-  }, [labels]);
+    setDisplayedLabels([]);
+    setPage(1);
+    setIsLoading(false);
+    
+    // Load initial page
+    const initialLabels = labels.slice(0, ITEMS_PER_PAGE);
+    setDisplayedLabels(initialLabels);
+  }, [labels]); // Only reset when labels array changes
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
-        if (firstEntry.isIntersecting) {
-          const nextPage = page + 1;
-          const startIndex = (nextPage - 1) * ITEMS_PER_PAGE;
-          const endIndex = startIndex + ITEMS_PER_PAGE;
+        if (firstEntry.isIntersecting && !isLoading && displayedLabels.length < labels.length) {
+          setIsLoading(true);
           
-          if (startIndex < labels.length) {
-            setDisplayedLabels(prev => [
-              ...prev,
-              ...labels.slice(startIndex, endIndex)
-            ]);
-            setPage(nextPage);
-          }
+          // Add artificial delay to prevent rapid loading
+          setTimeout(() => {
+            const nextPage = page + 1;
+            const startIndex = (nextPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            
+            if (startIndex < labels.length) {
+              setDisplayedLabels(prev => [
+                ...prev,
+                ...labels.slice(startIndex, endIndex)
+              ]);
+              setPage(nextPage);
+            }
+            setIsLoading(false);
+          }, 300);
         }
       },
       { threshold: 0.1 }
@@ -48,7 +63,7 @@ export function LabelGrid({ labels, onAddToQueue, getImageUrl }: LabelGridProps)
     }
 
     return () => observer.disconnect();
-  }, [page, labels]);
+  }, [page, labels, isLoading, displayedLabels.length]);
 
   const getLabelKey = (label: Label) => {
     return `${label["File Name"]}`;
@@ -68,7 +83,7 @@ export function LabelGrid({ labels, onAddToQueue, getImageUrl }: LabelGridProps)
   const handleAddToQueue = (label: Label) => {
     const quantity = parseInt(getQuantity(label)) || 0;
     if (quantity > 0) {
-      onAddToQueue(label, quantity); // Pass the actual quantity to the parent
+      onAddToQueue(label, quantity);
       // Reset quantity after adding to queue
       const key = getLabelKey(label);
       setQuantities(prev => ({ ...prev, [key]: '' }));
@@ -84,12 +99,6 @@ export function LabelGrid({ labels, onAddToQueue, getImageUrl }: LabelGridProps)
   return (
     <div className="flex-1 bg-white border-r overflow-y-auto">
       <div className="p-4">
-      <div className="flex items-center justify-end mb-4">
-  <span className="text-sm text-gray-500">
-    {labels.length} labels found
-  </span>
-</div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {displayedLabels.map((label) => (
             <div key={getLabelKey(label)} className="flex flex-col bg-white rounded-lg border hover:border-blue-500 transition-colors overflow-hidden">
@@ -149,8 +158,11 @@ export function LabelGrid({ labels, onAddToQueue, getImageUrl }: LabelGridProps)
           ))}
         </div>
 
-        <div ref={loaderRef} className="h-20 flex items-center justify-center">
-          {displayedLabels.length < labels.length && (
+        <div 
+          ref={loaderRef} 
+          className="h-20 flex items-center justify-center"
+        >
+          {isLoading && displayedLabels.length < labels.length && (
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           )}
         </div>
