@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Label } from '@/types';
-import { X, Printer, Trash2, Plus, Minus, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Printer, Trash2, Plus, Minus, Eye } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { LABEL_SPECS } from '@/constants';
 
@@ -29,8 +29,6 @@ export function PrintQueue({
   isOpen,
   onClose,
 }: PrintQueueProps) {
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [currentPreviewSheet, setCurrentPreviewSheet] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const totalLabels = queue.reduce((sum, item) => sum + item.quantity, 0);
@@ -117,7 +115,23 @@ export function PrintQueue({
 
       if (preview) {
         const pdfBlob = doc.output('blob');
-        URL.createObjectURL(pdfBlob);
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Create a temporary link element
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.target = '_blank'; // This ensures it opens in a new tab
+        link.rel = 'noopener noreferrer'; // Security best practice
+        
+        // Trigger the click
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the URL object after a short delay
+        setTimeout(() => {
+          URL.revokeObjectURL(pdfUrl);
+        }, 100);
       } else {
         const fileName = `labels-${new Date().toISOString().slice(0, 10)}.pdf`;
         doc.save(fileName);
@@ -129,100 +143,7 @@ export function PrintQueue({
     }
   };
 
-  const PreviewContent = () => (
-    <div className="grid grid-cols-4 grid-rows-2 gap-2 p-4 bg-gray-50">
-      {sheets[currentPreviewSheet]?.map((label, index) => (
-        <div
-          key={index}
-          className="border flex items-center justify-center p-2 bg-white"
-        >
-          <img
-            src={getImageUrl(label["File Name"])}
-            alt={label["Color Name"]}
-            className="max-w-full max-h-full"
-          />
-        </div>
-      ))}
-    </div>
-  );
-
   if (!isOpen) return null;
-
-  if (isPreviewMode) {
-    return (
-      <div className="fixed inset-0 bg-white z-50">
-        <div className="h-full flex flex-col">
-          <div className="p-4 border-b flex items-center justify-between bg-white">
-            <button
-              onClick={() => {
-                setIsPreviewMode(false);
-              }}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              Back to Queue
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-8">
-            {PreviewContent()}
-
-            <div className="mt-4 flex justify-center gap-4">
-              <button
-                onClick={() =>
-                  setCurrentPreviewSheet((prev) => Math.max(0, prev - 1))
-                }
-                disabled={currentPreviewSheet === 0}
-                className="p-2 rounded hover:bg-gray-100 disabled:opacity-50"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentPreviewSheet((prev) =>
-                    Math.min(sheets.length - 1, prev + 1)
-                  )
-                }
-                disabled={currentPreviewSheet === sheets.length - 1}
-                className="p-2 rounded hover:bg-gray-100 disabled:opacity-50"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-4 border-t bg-white">
-            <div className="flex justify-between gap-4">
-              <button
-                onClick={() => generatePDF(true)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                Preview PDF
-              </button>
-              <button
-                onClick={() => generatePDF(false)}
-                disabled={isGenerating}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Printer className="w-4 h-4" />
-                    Download PDF
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="print-queue fixed inset-y-0 right-0 w-96 bg-white shadow-xl flex flex-col z-50">
@@ -303,13 +224,25 @@ export function PrintQueue({
 
       <div className="p-4 border-t">
         <button
-          onClick={() => setIsPreviewMode(true)}
-          disabled={queue.length === 0}
+          onClick={() => generatePDF(true)}
+          disabled={queue.length === 0 || isGenerating}
           className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <Eye className="w-4 h-4" />
-          Preview & Print
+          {isGenerating ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              Generating PDF...
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4" />
+              Preview PDF
+            </>
+          )}
         </button>
+        <p className="mt-2 text-red-600 font-bold text-xl text-center">
+          *Use Avery Label Presta 94237*
+        </p>
       </div>
     </div>
   );
