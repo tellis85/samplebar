@@ -342,9 +342,28 @@ export function PrintQueue({
             </>
           )}
         </button>
-        <p className="mt-2 text-red-600 font-bold text-xl text-center">
-          *Use Avery Label Presta 94237*
-        </p>
+        <div className="mt-4 text-center">
+          <a 
+            href="https://www.avery.com/blank/labels/94237" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            style={{ 
+              fontSize: '15pt', 
+              fontWeight: 'bold', 
+              color: 'red', 
+              border: '4px solid black', 
+              padding: '8px', 
+              borderRadius: '5px', 
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', 
+              display: 'inline-block', 
+              marginBottom: '8px' 
+            }}
+          >
+            Click to purchase
+            <br />
+            Avery Label 94237
+          </a>
+        </div>
       </div>
     </div>
   );
